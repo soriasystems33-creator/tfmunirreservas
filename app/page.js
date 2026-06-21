@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { CalendarPlus, ChevronLeft, ChevronRight, Clock, ClipboardCheck, ArrowLeft, ArrowRight, Check, PlusCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -241,7 +241,7 @@ function BookingContent() {
         });
       }
       if (rdata.success) {
-        calculateSlots(ds, rdata.appointments || [], freshSettings, freshEmployees, overrideServices);
+        calculateSlots(ds, rdata.appointments || [], freshSettings, freshEmployees, overrideServices, rdata.blocks || []);
       }
     } catch (e) {
       console.error(e);
@@ -249,7 +249,7 @@ function BookingContent() {
     setLoadingSlots(false);
   };
 
-  const calculateSlots = (ds, dayApts, freshSettings, freshEmployees, overrideServices) => {
+  const calculateSlots = (ds, dayApts, freshSettings, freshEmployees, overrideServices, blocks = []) => {
     const settings = freshSettings || data.settings;
     const employees = freshEmployees || data.employees;
     // Use overrideServices to bypass React stale closure when specialist dropdown changes
@@ -323,16 +323,15 @@ function BookingContent() {
 
     const isEmpBusy = (empName, start, end) => {
       const empL = (empName || '').toLowerCase().trim();
-      return dayApts.some(a => {
+      
+      // 1. Check appointments
+      const hasApt = dayApts.some(a => {
         if (a.status === 'cancelled') return false;
         const aEmp = (a.employee || '').toLowerCase().trim();
         
         let blocksEmp = false;
-        // Si la cita tiene empleada genérica → bloquea a todas
         if (GENERIC_EMPS.includes(aEmp)) blocksEmp = true;
-        // Comparación directa o dentro de lista separada por comas
         else if (aEmp === empL || aEmp.split(',').map(e => e.trim()).includes(empL)) blocksEmp = true;
-        // Comprobación en el array services de la cita
         if (!blocksEmp && a.services && a.services.some(s => {
           const sE = (s.employee || '').toLowerCase().trim();
           return sE === empL || GENERIC_EMPS.includes(sE);
@@ -342,6 +341,18 @@ function BookingContent() {
         const aS = t2m(a.time), aE = aS + (a.duration || 15);
         return start < aE && end > aS;
       });
+      if(hasApt) return true;
+
+      // 2. Check blocks
+      const hasBlock = blocks.some(b => {
+        if(b.employee !== empName) return false;
+        const bS = t2m(b.startTime);
+        const bE = t2m(b.endTime);
+        return start < bE && end > bS;
+      });
+      if(hasBlock) return true;
+
+      return false;
     };
 
     

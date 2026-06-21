@@ -34,7 +34,24 @@ export async function GET(request) {
 
     appointments = appointments.filter(apt => apt.status !== 'cancelled');
 
-    return NextResponse.json({ success: true, appointments });
+    // Fetch blocks
+    const blocksSnap = await getDocs(collection(db, `${basePath}/blocks`));
+    const allBlocks = blocksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    // Filter blocks active on this date
+    const reqDate = new Date(date + 'T12:00:00');
+    const reqWeekday = reqDate.getDay();
+    
+    const blocks = allBlocks.filter(b => {
+      if(b.recurrenceEnd && b.recurrenceEnd < date) return false;
+      if(b.recurrence === 'none') return b.date === date;
+      if(b.recurrence === 'daily') return true;
+      if(b.recurrence === 'weekly') return b.weekday === reqWeekday;
+      if(b.recurrence === 'biweekly') return b.weekday === reqWeekday; // Simpler check for biweekly for now
+      return false;
+    });
+
+    return NextResponse.json({ success: true, appointments, blocks });
   } catch (error) {
     console.error('Error fetching availability:', error);
     return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
