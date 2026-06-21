@@ -1,5 +1,5 @@
-﻿import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { NextResponse } from 'next/server';
+import { db, doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where } from '@/lib/firebase-admin';
 import { notifyWebhook } from '@/lib/webhook';
 
 export const dynamic = 'force-dynamic';
@@ -13,28 +13,24 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Faltan datos obligatorios' }, { status: 400 });
     }
 
-    if (!db) {
-      return NextResponse.json({ success: false, error: 'Firebase no configurado' }, { status: 500 });
-    }
-
     const aid = "tfm-unir-default";
     const basePath = `artifacts/${aid}/public/data`;
 
-    const oldDocRef = db.collection(`${basePath}/appointments`).doc(oldId);
-    const oldDoc = await oldDocRef.get();
+    const oldDocRef = doc(db, `${basePath}/appointments/${oldId}`);
+    const oldDocSnap = await getDoc(oldDocRef);
 
-    if (!oldDoc.exists) {
+    if (!oldDocSnap.exists()) {
       return NextResponse.json({ success: false, error: 'Reserva original no encontrada' }, { status: 404 });
     }
 
-    const oldData = oldDoc.data();
+    const oldData = oldDocSnap.data();
 
     if (oldData.status === 'cancelled') {
       return NextResponse.json({ success: false, error: 'La cita original ya está cancelada' }, { status: 400 });
     }
 
     // Resolver empleada genérica
-    const emplSnap = await db.collection(`${basePath}/employees`).get();
+    const emplSnap = await getDocs(collection(db, `${basePath}/employees`));
     const realEmps = emplSnap.docs.map(d => d.data().name).filter(Boolean);
     const firstEmp = realEmps.length > 0 ? realEmps[0] : '';
     let employee = oldData.employee || '';
@@ -54,16 +50,15 @@ export async function POST(request) {
     }
 
     // Validar solapamiento
-    const existingSnap = await db.collection(`${basePath}/appointments`)
-      .where('date', '==', newDate)
-      .where('status', '==', 'confirmed')
-      .get();
+    const existingSnap = await getDocs(
+      query(collection(db, `${basePath}/appointments`), where('date', '==', newDate), where('status', '==', 'confirmed'))
+    );
     const dur = oldData.duration || 15;
     const tStart = t2m(newTime);
     const tEnd = tStart + dur;
-    for (const doc of existingSnap.docs) {
-      if (doc.id === oldId) continue;
-      const a = doc.data();
+    for (const dSnap of existingSnap.docs) {
+      if (dSnap.id === oldId) continue;
+      const a = dSnap.data();
       if (!a) continue;
       const aNames = aEmpNames(a);
       if (aNames.size === 0) continue;
@@ -96,9 +91,9 @@ export async function POST(request) {
       updatedAt: new Date().toISOString()
     };
 
-    const newDocRef = await db.collection(`${basePath}/appointments`).add(newData);
+    const newDocRef = await addDoc(collection(db, `${basePath}/appointments`), newData);
 
-    await oldDocRef.update({
+    await updateDoc(oldDocRef, {
       status: 'cancelled',
       modifiedTo: newDocRef.id,
       updatedAt: new Date().toISOString(),
@@ -111,6 +106,6 @@ export async function POST(request) {
     return NextResponse.json({ success: true, newId: newDocRef.id });
   } catch (error) {
     console.error('Error modifying appointment:', error);
-    return NextResponse.json({ success: false, error: 'Error interno del servidor' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Error interno del servidor' }, { status: 500 });
   }
 }

@@ -1,5 +1,5 @@
-﻿import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { NextResponse } from 'next/server';
+import { db, doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where } from '@/lib/firebase-admin';
 import { notifyWebhook } from '@/lib/webhook';
 
 // Helper: minutos desde medianoche
@@ -30,10 +30,6 @@ export async function POST(request) {
     const cleanPhone = (v) => v.replace(/^\+34/,'').replace(/[\s\-\(\)\.]/g,'').replace(/^34(?=\d{9})/,'');
     body.clientPhone = cleanPhone(body.clientPhone);
 
-    if (!db) {
-      return NextResponse.json({ success: false, error: 'Firebase no configurado' }, { status: 500 });
-    }
-
     const aid = "tfm-unir-default";
     const basePath = `artifacts/${aid}/public/data`;
 
@@ -50,7 +46,7 @@ export async function POST(request) {
     }
 
     // Resolver empleada genérica → primera empleada real
-    const emplSnap = await db.collection(`${basePath}/employees`).get();
+    const emplSnap = await getDocs(collection(db, `${basePath}/employees`));
     const realEmps = emplSnap.docs.map(d => d.data().name).filter(Boolean);
     const firstEmp = realEmps.length > 0 ? realEmps[0] : '';
 
@@ -69,7 +65,6 @@ export async function POST(request) {
     // duration: si hay varias empleadas simultáneas → máximo; si es la misma → suma
     let duration;
     if (uniqueEmps.length > 1) {
-      // Simultáneo: la duración real es el máximo de las duraciones por empleada
       const durByEmp = {};
       services.forEach(s => {
         const e = s.employee || '';
@@ -77,7 +72,6 @@ export async function POST(request) {
       });
       duration = Math.max(...Object.values(durByEmp));
     } else {
-      // Una sola empleada: suma secuencial
       duration = services.reduce((sum, s) => sum + (s.duration || 0), 0);
     }
 
@@ -87,10 +81,9 @@ export async function POST(request) {
     const tEnd = tStart + duration;
 
     // Validar solapamiento por cada empleada implicada
-    // Traemos TODAS las citas del día (no canceladas) para comprobación robusta
-    const existingSnap = await db.collection(`${basePath}/appointments`)
-      .where('date', '==', date)
-      .get();
+    const existingSnap = await getDocs(
+      query(collection(db, `${basePath}/appointments`), where('date', '==', date))
+    );
 
     for (const docSnap of existingSnap.docs) {
       const a = docSnap.data();
@@ -100,10 +93,8 @@ export async function POST(request) {
       const aS = t2m(a.time);
       const aE = aS + (a.duration || 15);
 
-      // ¿Se solapan en el tiempo?
       if (tStart >= aE || tEnd <= aS) continue;
 
-      // ¿Alguna de las empleadas de esta reserva nueva coincide con la cita existente?
       const clash = uniqueEmps.some(en => aEmpNames.has(en.toLowerCase()));
       if (clash) {
         return NextResponse.json({
@@ -115,7 +106,7 @@ export async function POST(request) {
 
     const data = {
       clientName,
-      clientPhone,
+      clientPhone: body.clientPhone,
       clientEmail: clientEmail || '',
       notes: notes || '',
       services,
@@ -133,14 +124,14 @@ export async function POST(request) {
       updatedAt: new Date().toISOString()
     };
 
-    const docRef = await db.collection(`${basePath}/appointments`).add(data);
+    const docRef = await addDoc(collection(db, `${basePath}/appointments`), data);
 
     await notifyWebhook('new', { id: docRef.id, ...data });
 
     return NextResponse.json({ success: true, id: docRef.id });
   } catch (error) {
     console.error('Error in booking API:', error);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -153,24 +144,19 @@ export async function DELETE(request) {
       return NextResponse.json({ error: 'Falta el ID de la reserva' }, { status: 400 });
     }
 
-    if (!db) {
-      return NextResponse.json({ success: false, error: 'Firebase no configurado' }, { status: 500 });
-    }
-
     const aid = "tfm-unir-default";
     const basePath = `artifacts/${aid}/public/data`;
-    const docRef = db.collection(`${basePath}/appointments`).doc(id);
-    const doc = await docRef.get();
+    const docRef = doc(db, `${basePath}/appointments/${id}`);
+    const docSnap = await getDoc(docRef);
 
-    if (!doc.exists) {
+    if (!docSnap.exists()) {
       return NextResponse.json({ error: 'Reserva no encontrada' }, { status: 404 });
     }
 
-    const data = doc.data();
+    const data = docSnap.data();
 
     const now = new Date();
     const aptDateTime = new Date(`${data.date}T${data.time}:00`);
-
     const threeHoursInMs = 3 * 60 * 60 * 1000;
 
     if (aptDateTime.getTime() - now.getTime() < threeHoursInMs) {
@@ -179,7 +165,7 @@ export async function DELETE(request) {
       }, { status: 400 });
     }
 
-    await docRef.update({
+    await updateDoc(docRef, {
       status: 'cancelled',
       updatedAt: new Date().toISOString()
     });
@@ -189,6 +175,6 @@ export async function DELETE(request) {
     return NextResponse.json({ success: true, message: 'Reserva cancelada' });
   } catch (error) {
     console.error('Error cancelling reservation:', error);
-    return NextResponse.json({ error: 'Error al cancelar la reserva' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Error al cancelar la reserva' }, { status: 500 });
   }
 }

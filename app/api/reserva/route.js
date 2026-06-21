@@ -1,4 +1,5 @@
-﻿import { db } from '../../../lib/firebase-admin';
+import { db } from '../../../lib/firebase-admin';
+import { doc, getDoc } from 'firebase/firestore';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
@@ -10,23 +11,20 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Falta el ID de la reserva' }, { status: 400 });
     }
 
-    if (!db) {
-      return NextResponse.json({ success: false, error: 'Firebase no configurado' }, { status: 500 });
-    }
+    const docRef = doc(db, `artifacts/tfm-unir-default/public/data/appointments/${id}`);
+    const docSnap = await getDoc(docRef);
 
-    const doc = await db.collection('artifacts/tfm-unir-default/public/data/appointments').doc(id).get();
-
-    if (!doc.exists) {
+    if (!docSnap.exists()) {
       return NextResponse.json({ error: 'Reserva no encontrada' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      id: doc.id,
-      ...doc.data()
+      id: docSnap.id,
+      ...docSnap.data()
     });
   } catch (error) {
     console.error('Error fetching reservation:', error);
-    return NextResponse.json({ error: 'Error al obtener la reserva' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Error al obtener la reserva' }, { status: 500 });
   }
 }

@@ -1,28 +1,24 @@
-﻿import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { NextResponse } from 'next/server';
+import { db, doc, getDoc, getDocs, collection } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    if (!db) {
-      return NextResponse.json({ success: false, error: 'Firebase no configurado' }, { status: 500 });
-    }
-
     const aid = "tfm-unir-default";
     const basePath = `artifacts/${aid}/public/data`;
 
     const [settingsSnap, servicesSnap, categoriesSnap, employeesSnap] = await Promise.all([
-      db.doc(`${basePath}/settings/main`).get(),
-      db.collection(`${basePath}/services`).get(),
-      db.collection(`${basePath}/categories`).get(),
-      db.collection(`${basePath}/employees`).get()
+      getDoc(doc(db, `${basePath}/settings/main`)),
+      getDocs(collection(db, `${basePath}/services`)),
+      getDocs(collection(db, `${basePath}/categories`)),
+      getDocs(collection(db, `${basePath}/employees`))
     ]);
 
-    const settings = settingsSnap.exists ? settingsSnap.data() : { start: "09:00", end: "20:00", specialDays: {} };
-    const services = servicesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const categories = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const employees = employeesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const settings = settingsSnap.exists() ? settingsSnap.data() : { start: "09:00", end: "20:00", specialDays: {} };
+    const services = servicesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const categories = categoriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const employees = employeesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     return NextResponse.json({
       success: true,
@@ -33,6 +29,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching basic data:', error);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
