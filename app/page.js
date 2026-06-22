@@ -195,7 +195,10 @@ function BookingContent() {
   // Helper: extremos del día (inicio más temprano, fin más tardío)
   const getDCRange = (dc) => {
     if (dc.type === 'closed') return { s: t2m('09:00'), e: t2m('20:00') };
-    if (dc.type === 'split') return { s: t2m(dc.start), e: t2m(dc.end2) };
+    if (dc.type === 'split') {
+      const e = dc.end2 ? dc.end2 : dc.end; // Fallback to end if end2 is somehow missing
+      return { s: t2m(dc.start), e: t2m(e) };
+    }
     return { s: t2m(dc.start || data.settings?.start || '09:00'), e: t2m(dc.end || data.settings?.end || '20:00') };
   };
 
