@@ -662,17 +662,16 @@ function BookingContent() {
                 <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
               </div>
               <h2 className="text-xl font-semibold italic mb-1 text-[#2e2826]" style={{fontFamily:"'Cormorant Garamond',serif"}}>Clínica Estética UNIR</h2>
-              <p className="text-sm font-bold text-[#5b8f7a] mb-3">by Frida</p>
-              <p className="text-sm font-semibold text-[#2e2826] mb-4">📍 Calle Fuenteberros, 4, Urb. Camaretas, Golmayo, Soria</p>
+              <p className="text-sm font-semibold text-[#2e2826] mb-4">📍 Av. de la Paz, 137, 26006 Logroño, La Rioja</p>
               <div className="rounded-2xl overflow-hidden mb-4 shadow-sm border border-[#e0d8d5] h-40">
                 <iframe
                   title="Ubicación Clínica Estética UNIR"
-                  src="https://maps.google.com/maps?q=Calle+Fuenteberros+4+Golmayo+Soria&output=embed"
+                  src="https://maps.google.com/maps?q=Av+de+la+Paz+137+Logrono&output=embed"
                   width="100%" height="100%" style={{border:0}} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"
                 />
               </div>
               <a
-                href="https://maps.google.com/maps?q=Calle+Fuenteberros+4+Golmayo+Soria"
+                href="https://maps.google.com/maps?q=Av+de+la+Paz+137+Logrono"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-xs font-bold text-[#5b8f7a] mb-4 underline underline-offset-2"
@@ -786,8 +785,7 @@ function BookingContent() {
               </div>
             </div>
             <h1 className="text-5xl font-semibold italic mb-2 text-[#2e2826]" style={{fontFamily:"'Cormorant Garamond',serif"}}>Clínica Estética UNIR</h1>
-            <p className="text-base font-medium mb-2 text-[#5b8f7a]">by Frida</p>
-            <p className="text-sm font-medium mb-10 max-w-xs text-[#7a6b67]">Tu centro de belleza en Soria. Uñas, pestañas, cejas y mucho más.</p>
+            <p className="text-sm font-medium mb-10 max-w-xs text-[#7a6b67]">Tu centro de tratamientos estéticos de pruebas.</p>
             <button onClick={() => setStep(1)} className="btn-primary text-base px-10 py-4 rounded-2xl shadow-xl active:scale-95" style={{boxShadow:'0 12px 32px rgba(91,143,122,.3)'}}>
               <CalendarPlus className="w-5 h-5" /> Reservar cita
             </button>
@@ -1084,7 +1082,7 @@ function BookingContent() {
                     <div className="px-4 pb-4 space-y-4 text-xs text-[#7a6b67] leading-relaxed max-h-52 overflow-y-auto border-t border-[#e0d8d5] pt-4">
                       <div><h4 className="font-bold text-[#2e2826] text-xs uppercase tracking-widest mb-2">1. Condiciones de la Cita</h4><p>La cita se confirma una vez recibida y procesada por el sistema. Clínica Estética UNIR se reserva el derecho de modificar o cancelar la cita en caso de incidencias técnicas o de agenda, informando al cliente por los medios facilitados. En caso de no presentarse sin aviso previo con al menos 3 horas de antelación, el estudio podrá requerir una confirmación previa para futuras reservas.</p></div>
                       <div><h4 className="font-bold text-[#2e2826] text-xs uppercase tracking-widest mb-2">2. Responsabilidad del Cliente</h4><p>El cliente se compromete a facilitar datos veraces y actualizados. La información sobre alergias, sensibilidades cutáneas o condiciones médicas se facilita voluntariamente; el estudio hará lo posible por atenderlas pero no puede garantizar la ausencia total de reacciones en tratamientos de belleza.</p></div>
-                      <div><h4 className="font-bold text-[#2e2826] text-xs uppercase tracking-widest mb-2">3. Protección de Datos (RGPD)</h4><p><strong>Responsable:</strong> Clínica Estética UNIR.</p><p><strong>Finalidad:</strong> Gestionar citas, enviar recordatorios, comunicar cambios o cancelaciones, enviar encuesta post-visita por email, y mantener histórico de visitas.</p><p><strong>Base legítima:</strong> Ejecución de un contrato (la cita) y consentimiento explícito.</p><p><strong>Destinatarios:</strong> No se cederán a terceros salvo obligación legal. Servicios cloud (Vercel, Google Cloud) acogidos al Privacy Framework UE-EEUU.</p><p><strong>Plazo:</strong> Durante la relación comercial y hasta 5 años después.</p><p><strong>Derechos:</strong> Acceso, rectificación, supresión, limitación, portabilidad y oposición escribiendo a <strong>info@fridanails.com</strong>. Reclamación ante la AEPD.</p><p><strong>Comunicaciones:</strong> Al facilitar email y teléfono, el cliente consiente recibir comunicaciones de su cita y un email post-visita de valoración, sin publicidad comercial.</p></div>
+                      <div><h4 className="font-bold text-[#2e2826] text-xs uppercase tracking-widest mb-2">3. Protección de Datos (RGPD)</h4><p><strong>Responsable:</strong> Clínica Estética UNIR.</p><p><strong>Finalidad:</strong> Gestionar citas, enviar recordatorios, comunicar cambios o cancelaciones, enviar encuesta post-visita por email, y mantener histórico de visitas.</p><p><strong>Base legítima:</strong> Ejecución de un contrato (la cita) y consentimiento explícito.</p><p><strong>Destinatarios:</strong> No se cederán a terceros salvo obligación legal. Servicios cloud (Vercel, Google Cloud) acogidos al Privacy Framework UE-EEUU.</p><p><strong>Plazo:</strong> Durante la relación comercial y hasta 5 años después.</p><p><strong>Derechos:</strong> Acceso, rectificación, supresión, limitación, portabilidad y oposición escribiendo a <strong>soriasystems33@gmail.com</strong>. Reclamación ante la AEPD.</p><p><strong>Comunicaciones:</strong> Al facilitar email y teléfono, el cliente consiente recibir comunicaciones de su cita y un email post-visita de valoración, sin publicidad comercial.</p></div>
                     </div>
                   )}
                   <div className="flex items-start gap-3 p-4 border-t border-[#e0d8d5] bg-[#faf7f4]">
