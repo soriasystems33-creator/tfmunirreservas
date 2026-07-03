@@ -140,6 +140,12 @@ function BookingContent() {
       }
     }
     
+    let globalClosed = false, globalStart = null, globalEnd = null;
+    if (sd[dateStr]?.global) {
+      if (sd[dateStr].global.type === 'closed') globalClosed = true;
+      else if (sd[dateStr].global.type === 'custom') { globalStart = sd[dateStr].global.start; globalEnd = sd[dateStr].global.end; }
+    }
+    
     const d = new Date(dateStr + 'T12:00:00');
     const day = d.getDay();
     // 3) Horario semanal individual
