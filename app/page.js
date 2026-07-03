@@ -127,14 +127,21 @@ function BookingContent() {
     // 1) Override MANUAL de la empleada para una fecha específica
     if (sd[dateStr] && sd[dateStr][empName] && !sd[dateStr][empName]._auto) return sd[dateStr][empName];
     
+    // 2) Estado del día especial global (si existe, prioriza frente a horarios semanales o generales)
+    if (sd[dateStr]?.global) {
+      if (sd[dateStr].global.type === 'closed') return { type: 'closed' };
+      if (sd[dateStr].global.type === 'custom') {
+        return {
+          type: 'standard',
+          start: sd[dateStr].global.start,
+          end: sd[dateStr].global.end,
+          closedHours: sd[dateStr].global.closedHours || []
+        };
+      }
+    }
+    
     const d = new Date(dateStr + 'T12:00:00');
     const day = d.getDay();
-    // 2) Estado del día especial global
-    let globalClosed = false, globalStart = null, globalEnd = null;
-    if (sd[dateStr]?.global) {
-      if (sd[dateStr].global.type === 'closed') globalClosed = true;
-      else if (sd[dateStr].global.type === 'custom') { globalStart = sd[dateStr].global.start; globalEnd = sd[dateStr].global.end; }
-    }
     // 3) Horario semanal individual
     let hasWeekly = false, weeklyClosed = false, weeklyStart = null, weeklyEnd = null, weeklyType = null, weeklyStart2 = null, weeklyEnd2 = null;
     const key = 'weekly_' + empName;
