@@ -148,6 +148,10 @@ function BookingContent() {
     
     const d = new Date(dateStr + 'T12:00:00');
     const day = d.getDay();
+    // 2.5) Si el día de la semana está cerrado globalmente en el horario semanal general, se cierra para todos
+    if (ss?.weekly && ss.weekly[day] && ss.weekly[day].closed) {
+      return { type: 'closed' };
+    }
     // 3) Horario semanal individual
     let hasWeekly = false, weeklyClosed = false, weeklyStart = null, weeklyEnd = null, weeklyType = null, weeklyStart2 = null, weeklyEnd2 = null;
     const key = 'weekly_' + empName;
