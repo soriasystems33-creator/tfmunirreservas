@@ -124,8 +124,11 @@ function BookingContent() {
   const getDCforEmp = useCallback((dateStr, empName) => {
     const ss = settingsRef.current;
     const sd = ss?.specialDays || {};
-    // 1) Override MANUAL de la empleada para una fecha específica
-    if (sd[dateStr] && sd[dateStr][empName] && !sd[dateStr][empName]._auto) return sd[dateStr][empName];
+    // 1) Override MANUAL de la empleada para una fecha específica (por ID o por Nombre)
+    const emp = (employeesRef.current || []).find(e => e.name.toLowerCase() === empName.toLowerCase());
+    const empId = emp ? emp.id : null;
+    const empOverride = (sd[dateStr] && empId && sd[dateStr][empId]) || (sd[dateStr] && sd[dateStr][empName]);
+    if (empOverride && !empOverride._auto) return empOverride;
     
     // 2) Estado del día especial global (si existe, prioriza frente a horarios semanales o generales)
     if (sd[dateStr]?.global) {
