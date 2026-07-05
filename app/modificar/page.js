@@ -191,7 +191,7 @@ function ModifyContent() {
       const res = await fetch(`/api/availability?date=${ds}`);
       const rdata = await res.json();
       if (rdata.success) {
-        calculateSlots(ds, rdata.appointments || []);
+        calculateSlots(ds, rdata.appointments || [], rdata.blocks || []);
       }
     } catch (e) {
       console.error(e);
@@ -199,7 +199,7 @@ function ModifyContent() {
     setLoadingSlots(false);
   };
 
-  const calculateSlots = (ds, dayApts) => {
+  const calculateSlots = (ds, dayApts, blocks = []) => {
     if (!apt) return;
     const dur = apt.duration || 15;
     const empRestriction = apt.employee || 'Todas';
@@ -272,11 +272,20 @@ function ModifyContent() {
             const aEmp = a.employee || '';
             return aEmp === emp.name || aEmp === 'Todas' || aEmp === 'Cualquiera' || aEmp === 'Ambos';
           });
-          const busy = empApts.some(a => {
+          let busy = empApts.some(a => {
             const aStart = t2m(a.time);
             const aEnd = aStart + (a.duration || 15);
             return t < aEnd && (t + dur) > aStart;
           });
+          if (!busy) {
+            const hasBlock = blocks.some(b => {
+              if (b.employee !== emp.name) return false;
+              const bS = t2m(b.startTime);
+              const bE = t2m(b.endTime);
+              return t < bE && (t + dur) > bS;
+            });
+            if (hasBlock) busy = true;
+          }
           if (!busy) { slotFree = true; break; }
         }
       }
