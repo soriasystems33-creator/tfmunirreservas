@@ -167,14 +167,35 @@ function BookingContent() {
     }
     // 4) Global "Cerrado" → cierra a TODOS
     if (globalClosed) return { type: 'closed' };
-    // 5) Empleada con horario semanal → intersectar con global custom
+    // 5) Empleada con horario semanal → intersectar con global custom / global weekly
     if (hasWeekly) {
       if (weeklyClosed) return { type: 'closed' };
+      const gWeekly = ss?.weekly?.[day];
       if (weeklyType === 'split') {
-        // For split schedules, intersection only applies to the first block
-        const s1 = globalStart ? (t2m(weeklyStart) > t2m(globalStart) ? weeklyStart : globalStart) : weeklyStart;
-        const e1 = globalEnd ? (t2m(weeklyEnd) < t2m(globalEnd) ? weeklyEnd : globalEnd) : weeklyEnd;
-        return { type: 'split', start: s1, end: e1, start2: weeklyStart2, end2: weeklyEnd2 };
+        let s1 = weeklyStart, e1 = weeklyEnd, s2 = weeklyStart2, e2 = weeklyEnd2;
+        if (globalStart) {
+          s1 = globalStart ? (t2m(weeklyStart) > t2m(globalStart) ? weeklyStart : globalStart) : weeklyStart;
+          e1 = globalEnd ? (t2m(weeklyEnd) < t2m(globalEnd) ? weeklyEnd : globalEnd) : weeklyEnd;
+          s2 = globalStart ? (t2m(weeklyStart2) > t2m(globalStart) ? weeklyStart2 : globalStart) : weeklyStart2;
+          e2 = globalEnd ? (t2m(weeklyEnd2) < t2m(globalEnd) ? weeklyEnd2 : globalEnd) : weeklyEnd2;
+        } else if (gWeekly && gWeekly.type === 'split') {
+          s1 = t2m(weeklyStart) > t2m(gWeekly.start) ? weeklyStart : gWeekly.start;
+          e1 = t2m(weeklyEnd) < t2m(gWeekly.end) ? weeklyEnd : gWeekly.end;
+          s2 = t2m(weeklyStart2) > t2m(gWeekly.start2) ? weeklyStart2 : gWeekly.start2;
+          e2 = t2m(weeklyEnd2) < t2m(gWeekly.end2) ? weeklyEnd2 : gWeekly.end2;
+        }
+        return { type: 'split', start: s1, end: e1, start2: s2, end2: e2 };
+      }
+      if (gWeekly && gWeekly.type === 'split' && !globalStart) {
+        const s1 = t2m(weeklyStart) > t2m(gWeekly.start) ? weeklyStart : gWeekly.start;
+        const e1 = t2m(weeklyEnd) < t2m(gWeekly.end) ? weeklyEnd : gWeekly.end;
+        const s2 = t2m(weeklyStart) > t2m(gWeekly.start2) ? weeklyStart : gWeekly.start2;
+        const e2 = t2m(weeklyEnd) < t2m(gWeekly.end2) ? weeklyEnd : gWeekly.end2;
+        if (t2m(s2) < t2m(e2)) {
+          return { type: 'split', start: s1, end: e1, start2: s2, end2: e2 };
+        } else {
+          return { type: 'standard', start: s1, end: e1 };
+        }
       }
       const start = globalStart ? (t2m(weeklyStart) > t2m(globalStart) ? weeklyStart : globalStart) : weeklyStart;
       const end = globalEnd ? (t2m(weeklyEnd) < t2m(globalEnd) ? weeklyEnd : globalEnd) : weeklyEnd;
