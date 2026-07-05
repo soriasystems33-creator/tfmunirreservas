@@ -325,14 +325,28 @@ function BookingContent() {
     const nowMin = ds === todayStr ? now.getHours() * 60 + now.getMinutes() + 15 : 0;
     const closedHours = settings?.specialDays?.[ds]?.closedHours || [];
     
-    const isSlotClosedForEmp = (slotStart, slotEnd, empName) => {
-      return closedHours.some(ch => {
+    const isSlotClosedForEmp = (slotStart, slotEnd, empName, dc) => {
+      // 1) Verificar closedHours globales/emp que vienen del Firestore general (objetos {from, to, entity})
+      const hasDbClosed = closedHours.some(ch => {
         const chFrom = t2m(ch.from), chTo = t2m(ch.to);
         if (slotStart < chTo && slotEnd > chFrom) {
           if (ch.entity === 'global' || ch.entity === empName) return true;
         }
         return false;
       });
+      if (hasDbClosed) return true;
+
+      // 2) Verificar closedHours de jornada partida en masa que vienen en la propiedad dc.closedHours (array de strings)
+      if (dc && dc.closedHours && Array.isArray(dc.closedHours)) {
+        const hasCustomClosed = dc.closedHours.some(timeStr => {
+          const chMin = t2m(timeStr);
+          // Si el slot se solapa con el bloque de 15 min [chMin, chMin + 15]
+          return slotStart < (chMin + 15) && slotEnd > chMin;
+        });
+        if (hasCustomClosed) return true;
+      }
+
+      return false;
     };
 
     const GENERIC_EMPS = ['automático', 'automatico', 'todas', 'cualquiera', 'ambos'];
@@ -384,7 +398,7 @@ function BookingContent() {
           const eDur = empDurs[empName];
           // Comprueba que el slot cabe en el horario (soporta split)
           if (!isTimeInDC(dc, t, eDur)) { allFree = false; break; }
-          if (isSlotClosedForEmp(t, t + eDur, empName)) { allFree = false; break; }
+          if (isSlotClosedForEmp(t, t + eDur, empName, dc)) { allFree = false; break; }
           if (isEmpBusy(empName, t, t + eDur)) { allFree = false; break; }
           const emp = employees.find(e => e.name === empName);
           if (emp) empsList.push(emp);
@@ -399,7 +413,7 @@ function BookingContent() {
               const dc = getDCforEmp(ds, emp.name);
               if (dc.type === 'closed') return false;
               if (!isTimeInDC(dc, t, flexDur)) return false;
-              if (isSlotClosedForEmp(t, t + flexDur, emp.name)) return false;
+              if (isSlotClosedForEmp(t, t + flexDur, emp.name, dc)) return false;
               if (isEmpBusy(emp.name, t, t + flexDur)) return false;
               empsList.push(emp);
               return true;
@@ -430,7 +444,7 @@ function BookingContent() {
               var dc2 = getDCforEmp(ds, emp.name);
               if (dc2.type === 'closed') return false;
               if (!isTimeInDC(dc2, t, svcDur)) return false;
-              if (isSlotClosedForEmp(t, t + svcDur, emp.name)) return false;
+              if (isSlotClosedForEmp(t, t + svcDur, emp.name, dc2)) return false;
               if (isEmpBusy(emp.name, t, t + svcDur)) return false;
               assigned.push(emp.name);
               return true;
@@ -446,14 +460,14 @@ function BookingContent() {
               var dc2 = getDCforEmp(ds, emp.name);
               if (dc2.type === 'closed') return false;
               if (!isTimeInDC(dc2, t, totalDur)) return false;
-              if (isSlotClosedForEmp(t, t + totalDur, emp.name)) return false;
+              if (isSlotClosedForEmp(t, t + totalDur, emp.name, dc2)) return false;
               return !isEmpBusy(emp.name, t, t + totalDur);
             });
             slots.push({ time: m2t(t), free: seqFree, emps: seqFree ? [employees.find(function(e){
               var dc2 = getDCforEmp(ds, e.name);
               if (dc2.type === 'closed') return false;
               if (!isTimeInDC(dc2, t, totalDur)) return false;
-              if (isSlotClosedForEmp(t, t + totalDur, e.name)) return false;
+              if (isSlotClosedForEmp(t, t + totalDur, e.name, dc2)) return false;
               return !isEmpBusy(e.name, t, t + totalDur);
             })].filter(Boolean) : [] });
           }
@@ -484,7 +498,7 @@ function BookingContent() {
               if (dc2.type === 'closed') continue;
               // El slot completo (suma secuencial) debe caber en el horario de esta empleada
               if (!isTimeInDC(dc2, t, totalDur)) continue;
-              if (isSlotClosedForEmp(t, t + totalDur, emp.name)) continue;
+              if (isSlotClosedForEmp(t, t + totalDur, emp.name, dc2)) continue;
               if (isEmpBusy(emp.name, t, t + totalDur)) continue;
 
               // Si además hay servicios flexibles EN esta combinación que requieren una 2ª empleada:
