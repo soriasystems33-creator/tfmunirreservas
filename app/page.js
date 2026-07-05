@@ -1047,16 +1047,19 @@ function BookingContent() {
                     var hasFlex = selServices.some(function(s){ return !s.employee || s.employee === 'Todas' || s.employee === 'Ambos' || s.employee === 'Cualquiera'; });
                     if (allSame && !hasFlex) {
                       return <div className="mt-4 p-3 rounded-lg text-xs leading-relaxed border" style={{background:'#fff8e6',borderColor:'#f0dca0',color:'var(--brown-mid)'}}>
-                        <strong>⏱ Una misma especialista:</strong> Todos los servicios los hará <strong>{empList[0]}</strong> uno tras otro. El tiempo total se <strong>suma</strong> ({getTotalDur(selServices)} min seguidos). Reserva suficiente tiempo.
+                        <strong>⏱ Una misma especialista:</strong> Todos los servicios los hará <strong>{empList[0]}</strong> uno tras otro. El tiempo total se <strong>suma</strong> ({getTotalDur(selServices)} min seguidos).
+                        <div className="mt-1.5 text-[10px] opacity-85">💡 Si no encuentras huecos libres suficientes, prueba a reservar los servicios por separado o seleccionando especialistas diferentes.</div>
                       </div>;
                     }
                     if (empList.length > 1) {
                       return <div className="mt-4 p-3 rounded-lg text-xs leading-relaxed border" style={{background:'#e8f5e9',borderColor:'#a5d6a7',color:'var(--brown-mid)'}}>
                         <strong>✅ Todo a la vez:</strong> Cada servicio tiene su propia profesional, así que se hacen <strong>al mismo tiempo</strong>. La hora que ves es la de inicio para todas.
+                        <div className="mt-1.5 text-[10px] opacity-85">💡 Si no encuentras disponibilidad simultánea para todas a la vez, prueba a realizar las reservas de cada servicio por separado.</div>
                       </div>;
                     }
                     return <div className="mt-4 p-3 rounded-lg text-xs leading-relaxed border" style={{background:'#fff8e6',borderColor:'#f0dca0',color:'var(--brown-mid)'}}>
                       <strong>⏱ Atención:</strong> Los servicios con especialista fija asignan a esa profesional. Los que tienen "Automático" buscan otra disponible. Si todo lo hace la misma persona, el tiempo se suma ({getTotalDur(selServices)} min).
+                      <div className="mt-1.5 text-[10px] opacity-85">💡 Si no ves disponibilidad para todos los servicios juntos, prueba a realizar las reservas por separado.</div>
                     </div>;
                   })()}
                 </div>
