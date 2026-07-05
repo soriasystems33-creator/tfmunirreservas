@@ -127,7 +127,15 @@ function BookingContent() {
     // 1) Override MANUAL de la empleada para una fecha específica (por ID o por Nombre)
     const emp = (employeesRef.current || []).find(e => e.name.toLowerCase() === empName.toLowerCase());
     const empId = emp ? emp.id : null;
-    const empOverride = (sd[dateStr] && empId && sd[dateStr][empId]) || (sd[dateStr] && sd[dateStr][empName]);
+    let empOverride = null;
+    if (sd[dateStr]) {
+      if (empId && sd[dateStr][empId]) {
+        empOverride = sd[dateStr][empId];
+      } else {
+        const foundKey = Object.keys(sd[dateStr]).find(k => k.toLowerCase() === empName.toLowerCase());
+        if (foundKey) empOverride = sd[dateStr][foundKey];
+      }
+    }
     if (empOverride && !empOverride._auto) return empOverride;
     
     // 2) Estado del día especial global (si existe, prioriza frente a horarios semanales o generales)
