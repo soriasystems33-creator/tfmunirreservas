@@ -416,37 +416,50 @@ function BookingContent() {
     
     const slots = [];
     if (isMultiEmp) {
-      // Multi-employee: ALL employees must be free simultaneously for their individual durations
-      for (let t = rangeStart; t + effDur <= rangeEnd; t += 15) {
+      // Multi-employee: services must be performed sequentially.
+      // We check if each employee is free at their specific sequential time slot.
+      const totalDur = getTotalDur(activeServices);
+      for (let t = rangeStart; t + totalDur <= rangeEnd; t += 15) {
         if (ds === todayStr && t <= nowMin) continue;
         let allFree = true, empsList = [];
-        for (const empName of uniqueEmps) {
-          const dc = getDCforEmp(ds, empName);
-          if (dc.type === 'closed') { allFree = false; break; }
-          const eDur = empDurs[empName];
-          // Comprueba que el slot cabe en el horario (soporta split)
-          if (!isTimeInDC(dc, t, eDur)) { allFree = false; break; }
-          if (isSlotClosedForEmp(t, t + eDur, empName, dc)) { allFree = false; break; }
-          if (isEmpBusy(empName, t, t + eDur)) { allFree = false; break; }
-          const emp = employees.find(e => e.name === empName);
-          if (emp) empsList.push(emp);
-        }
-        // Also check flexible services (no specific employee)
-        if (allFree) {
-          const flexSvcs = activeServices.filter(s => !s.employee || s.employee === 'Todas' || s.employee === 'Ambos' || s.employee === 'Cualquiera');
-          if (flexSvcs.length > 0) {
-            const flexDur = flexSvcs.reduce((sum, s) => sum + (s.duration || 0), 0);
-            const anyFlexFree = employees.some(emp => {
-              if (uniqueEmps.includes(emp.name)) return false;
+        let currentStart = t;
+        
+        for (let idx = 0; idx < activeServices.length; idx++) {
+          const s = activeServices[idx];
+          const sDur = s.duration || 15;
+          const sEnd = currentStart + sDur;
+          const empName = s.employee;
+          
+          if (empName && empName !== 'Todas' && empName !== 'Ambos' && empName !== 'Cualquiera') {
+            const dc = getDCforEmp(ds, empName);
+            if (dc.type === 'closed') { allFree = false; break; }
+            if (!isTimeInDC(dc, currentStart, sDur)) { allFree = false; break; }
+            if (isSlotClosedForEmp(currentStart, sEnd, empName, dc)) { allFree = false; break; }
+            if (isEmpBusy(empName, currentStart, sEnd)) { allFree = false; break; }
+            
+            const emp = employees.find(e => e.name === empName);
+            if (emp && !empsList.some(el => el.name === empName)) empsList.push(emp);
+            currentStart = sEnd;
+          } else {
+            // Flexible service: find any free employee for this slot [currentStart, sEnd]
+            let flexEmpName = null;
+            for (const emp of employees) {
               const dc = getDCforEmp(ds, emp.name);
-              if (dc.type === 'closed') return false;
-              if (!isTimeInDC(dc, t, flexDur)) return false;
-              if (isSlotClosedForEmp(t, t + flexDur, emp.name, dc)) return false;
-              if (isEmpBusy(emp.name, t, t + flexDur)) return false;
-              empsList.push(emp);
-              return true;
-            });
-            if (!anyFlexFree) allFree = false;
+              if (dc.type === 'closed') continue;
+              if (!isTimeInDC(dc, currentStart, sDur)) continue;
+              if (isSlotClosedForEmp(currentStart, sEnd, emp.name, dc)) continue;
+              if (isEmpBusy(emp.name, currentStart, sEnd)) continue;
+              
+              flexEmpName = emp.name;
+              if (!empsList.some(el => el.name === emp.name)) empsList.push(emp);
+              break;
+            }
+            if (flexEmpName) {
+              currentStart = sEnd;
+            } else {
+              allFree = false;
+              break;
+            }
           }
         }
         slots.push({ time: m2t(t), free: allFree, emps: empsList });
