@@ -106,7 +106,7 @@ function BookingContent() {
 
   useEffect(() => {
     // Reset date/time selection when services change outside step 2 (datetime selection) to prevent stale availability caching
-    if (step !== 2) {
+    if (step < 2) {
       setSelDate(null);
       setSelTime(null);
       setAvailableSlots([]);
