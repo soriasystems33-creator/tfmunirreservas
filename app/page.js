@@ -104,6 +104,15 @@ function BookingContent() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    // Reset date/time selection when services change outside step 2 (datetime selection) to prevent stale availability caching
+    if (step !== 2) {
+      setSelDate(null);
+      setSelTime(null);
+      setAvailableSlots([]);
+    }
+  }, [selServices, step]);
+
   const getLocalDateStr = (d) => {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
